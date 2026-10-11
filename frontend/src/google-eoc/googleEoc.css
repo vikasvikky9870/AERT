@@ -1072,20 +1072,21 @@
 /* 16. DEDICATED HIGH-VISIBILITY LIVE MOVING AMBULANCE PIN     */
 /* ============================================================ */
 .gmap-moving-ambulance-card {
-  display: flex !important;
+  display: inline-flex !important;
+  width: max-content !important;
+  max-width: 290px !important;
   align-items: center;
   gap: 8px;
   background: #060e1d;
   border: 2px solid #00f0ff;
   border-radius: 24px;
-  padding: 5px 12px;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.8), 0 4px 14px rgba(0, 0, 0, 0.7);
+  padding: 6px 14px;
+  box-shadow: 0 0 22px rgba(0, 240, 255, 0.85), 0 4px 14px rgba(0, 0, 0, 0.75);
   color: #ffffff;
   white-space: nowrap;
   pointer-events: auto;
   cursor: pointer;
   z-index: 1000 !important;
-  transition: transform 0.15s ease-out;
   position: relative;
 }
 

@@ -644,6 +644,7 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
   const handleStartTracking = (ambulanceId = 'AMB-001', targetName = 'NH-16 Collision') => {
     soundManager.playDispatchTone?.() || soundManager.playSirenTone();
     setIsTracking(true);
+    setSheetOpen(false);
     setTrackingPhase('PHASE_1_PICKUP');
     setTrackedVehicle(prev => ({
       ...prev,
