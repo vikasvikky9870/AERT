@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "StitchMCP": {
+      "type": "lazy",
+      "description": "Google Stitch AI design system and UI screen generation tools for AERT 3.0"
+    },
+    "openai-bridge": {
+      "command": "node",
+      "args": [
+        "d:/AERT/.agents/servers/openai-bridge.mjs"
+      ],
+      "description": "OpenAI LLM bridge providing access to GPT-4o, o3-mini, and custom OpenAI models"
+    }
+  }
+}

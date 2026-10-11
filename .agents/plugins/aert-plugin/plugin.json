@@ -1,0 +1,7 @@
+{
+  "name": "aert-emergency-plugin",
+  "version": "3.0.0",
+  "description": "AERT 3.0 Emergency Operations Command System plugin for Srikakulam District.",
+  "skills": ["aert-operator"],
+  "rules": ["aert-standards"]
+}

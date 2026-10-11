@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Surface Color Tokens */
+  --bg-app: #06090e;
+  --bg-surface-base: rgba(10, 16, 26, 0.88);
+  --bg-surface-elevated: rgba(14, 22, 36, 0.94);
+  --bg-surface-glass: rgba(8, 14, 23, 0.75);
+  --bg-surface-active: rgba(18, 30, 48, 0.96);
+  --bg-surface-frosted: rgba(6, 11, 18, 0.82);
+  
+  /* Borders & Glows */
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.16);
+  --border-bright: rgba(0, 240, 255, 0.5);
+  --border-glow-cyan: rgba(0, 240, 255, 0.35);
+  --border-glow-critical: rgba(255, 59, 48, 0.45);
+  
+  /* Tactical Accents */
+  --accent-cyan: #00f0ff;
+  --accent-cyan-hover: #33f3ff;
+  --accent-cyan-soft: rgba(0, 240, 255, 0.15);
+  --accent-blue: #0a84ff;
+  --accent-purple: #bf5af2;
+  --accent-amber: #ff9500;
+  
+  /* Semantic Status Colors */
+  --status-critical: #ff3b30;
+  --status-critical-bg: rgba(255, 59, 48, 0.15);
+  --status-warning: #ff9500;
+  --status-warning-bg: rgba(255, 149, 0, 0.15);
+  --status-active: #30d158;
+  --status-active-bg: rgba(48, 209, 88, 0.15);
+  --status-info: #64d2ff;
+  --status-info-bg: rgba(100, 210, 255, 0.15);
+  --status-neutral: #8e8e93;
+  --status-neutral-bg: rgba(142, 142, 147, 0.15);
+  
+  /* Typography Tokens */
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Text Colors */
+  --text-primary: #f2f5f8;
+  --text-secondary: #9aa8b8;
+  --text-muted: #5a6878;
+  --text-mono-cyan: #64f6ff;
+  
+  /* Shadows & Depth */
+  --shadow-panel: 0 16px 40px -8px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.06);
+  --shadow-glow-cyan: 0 0 24px rgba(0, 240, 255, 0.28);
+  --shadow-glow-critical: 0 0 28px rgba(255, 59, 48, 0.4);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 350ms cubic-bezier(0.25, 1, 0.5, 1);
+  
+  /* Border Radii (Restrained, Tactical) */
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+}
+
+/* Base Body Styles */
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: var(--bg-app);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(6, 9, 14, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-xs);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.4);
+}
+
+/* Tactical Animations */
+@keyframes aert-beacon-pulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes aert-sonar-pulse {
+  0% { transform: scale(0.8); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes aert-glow-pulse {
+  0%, 100% { opacity: 0.6; filter: drop-shadow(0 0 4px #00f0ff); }
+  50% { opacity: 1; filter: drop-shadow(0 0 12px #00f0ff); }
+}
+
+@keyframes aert-radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes aert-dash-flow {
+  to { stroke-dashoffset: -20; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+

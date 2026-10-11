@@ -1,0 +1,58 @@
+/**
+ * Srikakulam Multi-Hazard Emergency Scenario Presets for AERT 3.0
+ */
+
+export const SCENARIO_PRESETS = [
+  {
+    id: 'nh16_highway_pileup',
+    title: 'NH-16 Bypass Multi-Vehicle Collision',
+    category: 'TRAFFIC_CORRIDOR',
+    severity: 'critical',
+    location: 'NH-16 Srikakulam Bypass Junction',
+    coordinates: [83.9050, 18.3050],
+    casualties: 4,
+    hazards: ['Trapped Victims', 'Fuel Leakage', 'Highway Obstruction'],
+    recommendedUnit: 'AMB-003',
+    recommendedHospital: 'RIMS Srikakulam Trauma Center',
+    description: 'Major multi-vehicle collision involving an interstate freight container and 2 passenger vehicles on NH-16.',
+  },
+  {
+    id: 'cyclone_gulab_surge',
+    title: 'Kalingapatnam Coastal Cyclone Surge',
+    category: 'NATURAL_DISASTER',
+    severity: 'critical',
+    location: 'Kalingapatnam Coastal Port Sector',
+    coordinates: [84.1200, 18.3400],
+    casualties: 12,
+    hazards: ['Storm Surge Flooding', 'Power Grid Failure', 'Road Inundation'],
+    recommendedUnit: 'AMB-001',
+    recommendedHospital: 'GGH Srikakulam',
+    description: 'Severe cyclonic storm landfall causing heavy coastal flooding and structural inundation in low-lying fishing communities.',
+  },
+  {
+    id: 'singupuram_chemical_spill',
+    title: 'Singupuram Industrial Chemical Vapor Leak',
+    category: 'HAZMAT',
+    severity: 'warning',
+    location: 'Singupuram Industrial Corridor',
+    coordinates: [83.9200, 18.2700],
+    casualties: 3,
+    hazards: ['Toxic Vapor Plume', 'Respiratory Distress', 'Evacuation Zone'],
+    recommendedUnit: 'AMB-004',
+    recommendedHospital: 'RIMS Srikakulam Trauma Center',
+    description: 'Chlorine gas cylinder breach at chemical storage yard. Downwind perimeter evacuation recommended.',
+  },
+  {
+    id: 'palakonda_landslide',
+    title: 'Palakonda Ghat Road Inundation & Blockage',
+    category: 'INFRASTRUCTURE',
+    severity: 'warning',
+    location: 'Palakonda North Ghat Pass',
+    coordinates: [83.7600, 18.6000],
+    casualties: 1,
+    hazards: ['Debris Blockage', 'Isolated Rural Hamlet'],
+    recommendedUnit: 'AMB-001',
+    recommendedHospital: 'GGH Srikakulam',
+    description: 'Heavy torrential rainfall triggered soil displacement blocking both lanes of transit corridor to tribal agencies.',
+  },
+];
