@@ -480,9 +480,67 @@
         badge.style.color = "var(--success)";
     }
 
+    // Native Web Audio API Synthesizer (Zero External Audio Dependencies)
+    let audioCtx = null;
+    function getAudioCtx() {
+        if (!audioCtx) {
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+        }
+        return audioCtx;
+    }
+
+    function playEmergencyTone() {
+        try {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(880, now);
+            osc.frequency.setValueAtTime(1174, now + 0.15);
+            osc.frequency.setValueAtTime(880, now + 0.3);
+            osc.frequency.setValueAtTime(1174, now + 0.45);
+
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.6);
+        } catch (e) {}
+    }
+
+    function playConfirmationTone() {
+        try {
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const now = ctx.currentTime;
+            [523.25, 659.25, 783.99].forEach((freq, idx) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+                gain.gain.setValueAtTime(0.15, now + idx * 0.12);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + idx * 0.12);
+                osc.stop(now + idx * 0.12 + 0.35);
+            });
+        } catch (e) {}
+    }
+
     async function broadcastSOS() {
         if (isTransmitting) return;
         isTransmitting = true;
+        playEmergencyTone();
 
         const btn = document.getElementById('sosButton');
         const box = document.getElementById('statusBox');
@@ -516,6 +574,7 @@
 
             if (resp.ok) {
                 const data = await resp.json();
+                playConfirmationTone();
                 btn.classList.remove('pulsing');
                 btn.classList.add('sent');
                 btn.innerHTML = `
@@ -553,6 +612,7 @@
                 qubo_energy: -1.842
             };
 
+            playConfirmationTone();
             btn.classList.remove('pulsing');
             btn.classList.add('sent');
             btn.innerHTML = `

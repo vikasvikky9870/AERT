@@ -996,8 +996,9 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
 
   const handleSimulationToggle = () => {
     soundManager.playSirenTone?.();
+    handleSelectScenario('SCENARIO_1');
     setSimActive(true);
-    setToastNotice('⚡ 18-Step Live Emergency Orchestration Mission Engaged');
+    setToastNotice('⚡ 18-Step Live Emergency Orchestration Mission Engaged: NH-16 Express');
     setTimeout(() => setToastNotice(''), 3500);
   };
 
@@ -2035,7 +2036,7 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
               </div>
             </div>
             <iframe
-              src="/phone.html"
+              src="./phone.html"
               title="108 Citizen SOS Mobile App"
               className="phone-iframe"
             />
@@ -2051,7 +2052,6 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
           handleStopTracking();
         }}
         onStepChange={handleDemoStep}
-        scenario={currentScenario}
       />
 
       {/* 13. QAOA VS DIJKSTRA DECISION EXPLAINER DRAWER */}
