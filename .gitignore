@@ -49,3 +49,12 @@ Thumbs.db
 .uix/
 AERT-2.0-shell-update/
 
+# Scratch & automated verification scripts
+verify_*.py
+verify_*.mjs
+verify_*.cjs
+maplab_playwright_test.mjs
+frontend/verify_*.mjs
+frontend/verify_*.cjs
+frontend/maplab_playwright_test.mjs
+report_render/

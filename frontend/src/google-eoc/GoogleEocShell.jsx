@@ -17,6 +17,7 @@ import './googleEoc.css';
 import { useOperationalState } from '../state/operationalState';
 import { soundManager } from '../services/soundManager';
 import { GoldenSliceMission } from '../features/operations/GoldenSliceMission';
+import { OPERATIONAL_SCENARIOS } from './scenarios';
 import {
   Search,
   Navigation,
@@ -89,89 +90,20 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
   // Map Readiness State
   const [mapReady, setMapReady] = useState(false);
 
-  // 1. Quantum Multi-Route Network Definitions (5 Metrics: C, T, B, R, E)
-  const ROUTES_DATA = {
-    ROUTE_A: {
-      id: 'ROUTE_A',
-      name: 'Route A · Quantum QAOA Optimal',
-      badge: 'GROUND STATE |0001>',
-      type: 'QUANTUM',
-      eta: '7.8 min',
-      distance: '4.8 km',
-      congestion: 0.12, // C = 1 - Vcurrent/Vfree
-      predictedTime: '7.8m', // T = f_theta(X)
-      bottleneckDelay: '0.0m', // B
-      reliability: 0.94, // R = 1 - sigma/T
-      emergencyScore: 0.96, // E
-      color: '#00d4ff',
-      corridor: 'NH-16 Express Direct Corridor',
-      status: 'FREE FLOW',
-      waypoints: [
-        [83.8961, 18.2969], // 7 Road Junction Depot
-        [83.8978, 18.2988], // Collectorate Arterial
-        [83.9008, 18.3012], // Day & Night Junction
-        [83.9032, 18.3035], // NH-16 Connector Ramp
-        [83.9050, 18.3050], // INC-001 NH-16 Flyover Crash (Pickup Point)
-        [83.9080, 18.3080], // Highway Northbound
-        [83.9110, 18.3115], // Singupuram Bypass
-        [83.9135, 18.3135], // RIMS Approach Road
-        [83.9150, 18.3150]  // RIMS Medical College Trauma Bay
-      ]
-    },
-    ROUTE_B: {
-      id: 'ROUTE_B',
-      name: 'Route B · Traditional Arterial (Dijkstra)',
-      badge: 'HIGH TRAFFIC JAM',
-      type: 'ARTERIAL',
-      eta: '14.2 min',
-      distance: '5.6 km',
-      congestion: 0.68,
-      predictedTime: '14.2m',
-      bottleneckDelay: '+4.8m',
-      reliability: 0.61,
-      emergencyScore: 0.70,
-      color: '#ef4444',
-      corridor: 'via Old Bus Stand & Market Junction (<12 km/h)',
-      status: 'HEAVY GRIDLOCK',
-      waypoints: [
-        [83.8961, 18.2969],
-        [83.8930, 18.2950],
-        [83.8910, 18.2985],
-        [83.8940, 18.3040],
-        [83.9050, 18.3050],
-        [83.9070, 18.3100],
-        [83.9150, 18.3150]
-      ]
-    },
-    ROUTE_C: {
-      id: 'ROUTE_C',
-      name: 'Route C · River Detour Bypass',
-      badge: 'WATERLOGGING DETOUR',
-      type: 'BYPASS',
-      eta: '11.8 min',
-      distance: '6.4 km',
-      congestion: 0.41,
-      predictedTime: '11.8m',
-      bottleneckDelay: '+2.4m',
-      reliability: 0.79,
-      emergencyScore: 0.81,
-      color: '#8b5cf6',
-      corridor: 'via Western Ring & Nagavali Bridge Approach',
-      status: 'FLOOD HAZARD',
-      waypoints: [
-        [83.8961, 18.2969],
-        [83.8890, 18.2930],
-        [83.8820, 18.2890],
-        [83.8910, 18.3080],
-        [83.9050, 18.3050],
-        [83.9150, 18.3150]
-      ]
-    }
-  };
+  // 1. Multi-Scenario Operational State Engine
+  const [currentScenarioId, setCurrentScenarioId] = useState('SCENARIO_1');
+  const [showScenarioMenu, setShowScenarioMenu] = useState(false);
+  const [showLayersModal, setShowLayersModal] = useState(false);
+  const [showQuantumModal, setShowQuantumModal] = useState(false);
+  const [showAltRoutes, setShowAltRoutes] = useState(false);
+
+  const currentScenario = OPERATIONAL_SCENARIOS[currentScenarioId] || OPERATIONAL_SCENARIOS.SCENARIO_1;
+  const ROUTES_DATA = currentScenario.routes;
 
   const [selectedRouteId, setSelectedRouteId] = useState('ROUTE_A');
   const [showHospitalScanModal, setShowHospitalScanModal] = useState(false);
   const [showTrafficOverlay, setShowTrafficOverlay] = useState(true);
+  const [showFloodOverlay, setShowFloodOverlay] = useState(true);
   const [trackingPhase, setTrackingPhase] = useState('IDLE'); // 'IDLE'|'PHASE_1_PICKUP'|'PHASE_SCANNING'|'PHASE_2_TRANSPORT'|'COMPLETED'
 
   // Crew & Vehicle Dossier
@@ -368,42 +300,7 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
         });
       }
 
-      // C. Alternative Routes (Route B & C)
-      if (!map.getSource('aert-alt-route-b')) {
-        map.addSource('aert-alt-route-b', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: ROUTES_DATA.ROUTE_B.waypoints }
-          }
-        });
-        map.addLayer({
-          id: 'aert-alt-route-b-layer',
-          type: 'line',
-          source: 'aert-alt-route-b',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#f59e0b', 'line-width': 3, 'line-dasharray': [3, 2], 'line-opacity': 0.45 }
-        });
-      }
-
-      if (!map.getSource('aert-alt-route-c')) {
-        map.addSource('aert-alt-route-c', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'LineString', coordinates: ROUTES_DATA.ROUTE_C.waypoints }
-          }
-        });
-        map.addLayer({
-          id: 'aert-alt-route-c-layer',
-          type: 'line',
-          source: 'aert-alt-route-c',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#8b5cf6', 'line-width': 3, 'line-dasharray': [2, 2], 'line-opacity': 0.45 }
-        });
-      }
-
-      // D. Primary Active Emergency Corridor
+      // C. Primary Active Emergency Corridor
       if (!map.getSource('aert-active-route')) {
         map.addSource('aert-active-route', {
           type: 'geojson',
@@ -515,11 +412,11 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
           <div style="display: flex; flex-direction: column; line-height: 1.15;">
             <span style="font-size: 11px; font-weight: 800; color: #1a73e8;">${amb.id} · ${amb.type || 'ALS'}</span>
             <span style="font-size: 8.5px; color: ${isEnRoute ? '#188038' : '#5f6368'}; font-weight: 700;">
-              ${isEnRoute ? '⚡ EN ROUTE' : 'AVAILABLE'}
+              ${isEnRoute ? '⚡ EN ROUTE' : 'STANDBY · IDLE'}
             </span>
           </div>
-          <span style="font-size: 9.5px; background: ${isEnRoute ? '#e6f4ea' : '#e8f0fe'}; color: ${isEnRoute ? '#188038' : '#1a73e8'}; padding: 2px 6px; border-radius: 10px; font-weight: 800;">
-            ${amb.speed_kmh || 48} km/h
+          <span style="font-size: 9.5px; background: ${isEnRoute ? '#e6f4ea' : '#f1f3f4'}; color: ${isEnRoute ? '#188038' : '#5f6368'}; padding: 2px 6px; border-radius: 10px; font-weight: 800;">
+            ${isEnRoute ? `${amb.speed_kmh || 54} km/h` : '0 km/h · IDLE'}
           </span>
         `;
 
@@ -570,7 +467,11 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
 
         el.addEventListener('click', (e) => {
           e.stopPropagation();
-          soundManager.playSonarPing?.() || soundManager.playClick?.();
+          if (soundManager.playSonarPing) {
+            soundManager.playSonarPing();
+          } else if (soundManager.playClick) {
+            soundManager.playClick();
+          }
           setSelectedEntity({ type: 'hospital', data: hos });
           setSheetOpen(true);
           map.flyTo({ center: coords, zoom: 15.5, duration: 800 });
@@ -629,7 +530,7 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
     const r = ROUTES_DATA[routeId];
     if (!r) return;
     soundManager.playClickTone?.();
-    setToastNotice(`🧭 Active Corridor switched to: ${r.name}`);
+    setToastNotice(`🧭 Active Corridor: ${r.name}`);
 
     const map = mapRef.current;
     if (map && map.getSource('aert-active-route')) {
@@ -641,8 +542,52 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
     }
   };
 
-  const handleStartTracking = (ambulanceId = 'AMB-001', targetName = 'NH-16 Collision') => {
-    soundManager.playDispatchTone?.() || soundManager.playSirenTone();
+  const handleSelectScenario = (scenarioId) => {
+    const sc = OPERATIONAL_SCENARIOS[scenarioId];
+    if (!sc) return;
+    setCurrentScenarioId(scenarioId);
+    setShowScenarioMenu(false);
+    setSelectedRouteId('ROUTE_A');
+    handleStopTracking();
+
+    soundManager.playClickTone?.();
+    setToastNotice(`🎯 Scenario Switched: ${sc.fullName}`);
+
+    const map = mapRef.current;
+    if (map) {
+      map.flyTo({ center: sc.center, zoom: sc.zoom, pitch: sc.pitch, duration: 900 });
+      if (map.getSource('aert-active-route')) {
+        map.getSource('aert-active-route').setData({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: sc.routes.ROUTE_A.waypoints }
+        });
+      }
+    }
+
+    setSelectedEntity({
+      type: 'incident',
+      data: {
+        id: sc.incidentId,
+        title: sc.title,
+        severity: sc.severity,
+        location: sc.location,
+        coordinates: sc.center,
+        victims: sc.casualties.split(' ')[0] || 6,
+        critical_victims: sc.casualties.includes('Critical') ? 2 : 1,
+        hazard: sc.hazard,
+        assigned_ambulance: sc.assignedAmb,
+        assigned_hospital: sc.hospital
+      }
+    });
+    setSheetOpen(true);
+  };
+
+  const handleStartTracking = (ambulanceId = currentScenario.assignedAmb, targetName = currentScenario.title) => {
+    if (soundManager.playDispatchTone) {
+      soundManager.playDispatchTone();
+    } else if (soundManager.playSirenTone) {
+      soundManager.playSirenTone();
+    }
     setIsTracking(true);
     setSheetOpen(false);
     setTrackingPhase('PHASE_1_PICKUP');
@@ -654,13 +599,12 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
       progress: 0,
       statusLabel: 'EN ROUTE TO ACCIDENT SCENE'
     }));
-    setToastNotice(`🚑 Leg 1 Dispatched: Unit ${ambulanceId} En Route to Accident Pickup Point`);
+    setToastNotice(`🚑 Leg 1 Dispatched: Unit ${ambulanceId} En Route to Scene`);
 
     const route = ROUTES_DATA[selectedRouteId] || ROUTES_DATA.ROUTE_A;
-    // Leg 1: Depot to Incident Pickup (waypoints 0..4)
-    const waypointsLeg1 = route.waypoints.slice(0, 5);
-    // Leg 2: Incident Pickup to Hospital Handover (waypoints 4..end)
-    const waypointsLeg2 = route.waypoints.slice(4);
+    const midIdx = Math.floor(route.waypoints.length / 2);
+    const waypointsLeg1 = route.waypoints.slice(0, midIdx + 1);
+    const waypointsLeg2 = route.waypoints.slice(midIdx);
 
     const map = mapRef.current;
     if (map && map.getSource('aert-active-route')) {
@@ -737,14 +681,14 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
           progress: 50,
           statusLabel: 'PATIENT PICKUP · SCANNING VACANCIES'
         }));
-        setToastNotice('🚨 Arrived at Scene: 2 Critical Victims Secured. Scanning ICU Vacancies...');
+        setToastNotice(`🚨 Arrived at Scene: Victims Secured. Matching ${currentScenario.hospital}...`);
 
         // Scan delay: 3.5 seconds before moving to Stage 2
         setTimeout(() => {
           setShowHospitalScanModal(false);
           soundManager.playSirenTone?.();
           setTrackingPhase('PHASE_2_TRANSPORT');
-          setToastNotice('🏥 Hospital Allocated: RIMS Srikakulam Trauma Bay 1. En Route under ALS Protocol!');
+          setToastNotice(`🏥 Hospital Allocated: ${currentScenario.hospital}. En Route under ALS Protocol!`);
 
           // Update active route line to Leg 2 on map
           if (map && map.getSource('aert-active-route')) {
@@ -772,12 +716,12 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
                 const speedEl = document.getElementById('live-amb-speed');
                 if (speedEl) speedEl.textContent = '0 km/h';
                 const subEl = document.getElementById('live-amb-subtext');
-                if (subEl) subEl.textContent = 'AT RIMS TRAUMA BAY · HANDOVER';
+                if (subEl) subEl.textContent = 'HANDOVER COMPLETED';
               }
 
               soundManager.playSonarPing?.();
               setTrackingPhase('COMPLETED');
-              setToastNotice('✅ Patient Handover Complete at RIMS Srikakulam Trauma Bay. Mission Accomplished!');
+              setToastNotice(`✅ Handover Complete at ${currentScenario.hospital}. Mission Accomplished!`);
               setTrackedVehicle(prev => ({
                 ...prev,
                 speed: 0,
@@ -811,14 +755,14 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
             const speedEl = document.getElementById('live-amb-speed');
             if (speedEl) speedEl.textContent = `${speed} km/h`;
             const subEl = document.getElementById('live-amb-subtext');
-            if (subEl) subEl.textContent = `TO RIMS ➔ ${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+            if (subEl) subEl.textContent = `TO ER ➔ ${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
 
             setTrackedVehicle(prev => ({
               ...prev,
               speed,
-              eta: `${mins}m ${secs < 10 ? '0' : ''}${secs}s to RIMS`,
+              eta: `${mins}m ${secs < 10 ? '0' : ''}${secs}s to ER`,
               progress: Math.round(50 + leg2Fraction * 50),
-              statusLabel: 'RAPID TRANSPORT ➔ RIMS TRAUMA BAY'
+              statusLabel: 'RAPID TRANSPORT ➔ ER TRAUMA BAY'
             }));
 
             if (leg2Step % 3 === 0 && mapRef.current) {
@@ -897,108 +841,124 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
     setToastNotice('Tracking paused by operator');
   };
 
+  // Listen for Citizen SOS broadcast events from phone.html iframe
+  useEffect(() => {
+    const handleCitizenMessage = (event) => {
+      if (event.data && event.data.type === 'CITIZEN_SOS_TRIGGERED') {
+        const payload = event.data.data || {};
+        soundManager.playSirenTone();
+        setToastNotice(`🚨 Citizen SOS Registered! Unit ${payload.assigned_ambulance || 'AMB-001'} Dispatched.`);
+        setShowSosModal(false);
+        handleStartTracking(payload.assigned_ambulance_id || 'AMB-001', payload.target_hospital || 'Citizen Emergency');
+      }
+    };
+    window.addEventListener('message', handleCitizenMessage);
+    return () => window.removeEventListener('message', handleCitizenMessage);
+  }, [currentScenario]);
+
   // 18-Step Live Demo Step Handler (Coordinates MapLibre with each simulation phase)
   const handleDemoStep = (stepNumber) => {
     setSimStep(stepNumber);
     const map = mapRef.current;
     if (!map) return;
+    const sc = currentScenario;
 
     switch (stepNumber) {
       case 1:
       case 2:
       case 3:
         map.flyTo({ center: SRIKAKULAM_CENTER, zoom: 14.2, duration: 800 });
-        setToastNotice(`📞 Step 0${stepNumber}: 108 Distress Call Intake & NLP Extraction Active`);
+        setToastNotice(`📞 Step 0${stepNumber}: 108 Call Intake - ${sc.title}`);
         break;
 
       case 4:
       case 5: {
-        const incCoords = [83.9050, 18.3050];
-        map.flyTo({ center: incCoords, zoom: 15.6, pitch: 35, duration: 900 });
+        map.flyTo({ center: sc.center, zoom: sc.zoom, pitch: sc.pitch, duration: 900 });
         setSelectedEntity({
           type: 'incident',
           data: {
-            id: 'INC-1045',
-            title: 'NH-16 Bypass Multi-Vehicle Crash',
-            severity: 'CRITICAL',
-            coordinates: incCoords,
-            location: 'NH-16 Bypass Junction',
-            casualties: '6 victims (2 critical)',
-            hazard: 'Fuel leak on highway'
+            id: sc.incidentId,
+            title: sc.title,
+            severity: sc.severity,
+            coordinates: sc.center,
+            location: sc.location,
+            casualties: sc.casualties,
+            hazard: sc.hazard
           }
         });
         setSheetOpen(true);
-        setToastNotice('🚨 Step 05: Landmark Resolved to NH-16 Bypass. Incident INC-1045 Created (CRITICAL)');
+        setToastNotice(`🚨 Step 05: Landmark Resolved to ${sc.location}. Incident ${sc.incidentId} Created`);
         break;
       }
 
       case 6:
       case 7:
         handleSelectRoute('ROUTE_A');
-        setToastNotice('🧠 Step 07: Quantum QAOA evaluated nearest ALS units. AMB-003 recommended');
+        setToastNotice(`🧠 Step 07: Quantum QAOA evaluated optimal path. Recommending unit ${sc.assignedAmb}`);
         break;
 
       case 8:
         soundManager.playCautionPing?.();
-        setToastNotice('⚠️ Step 08: Human Command Gate. Dispatcher approval required to deploy AMB-003');
+        setToastNotice(`⚠️ Step 08: Human Command Gate. Dispatcher sign-off required to deploy ${sc.assignedAmb}`);
         break;
 
       case 9:
       case 10:
-        setToastNotice('🚑 Step 10: AMB-003 Dispatched with siren & dynamic speed corridor');
+        setToastNotice(`🚑 Step 10: ${sc.assignedAmb} Dispatched with siren along ${sc.routes.ROUTE_A.corridor}`);
         if (!isTracking) {
-          handleStartTracking('AMB-003', 'NH-16 Bypass Collision');
+          handleStartTracking(sc.assignedAmb, sc.title);
         }
         break;
 
       case 11: {
         soundManager.playWarningBeep?.();
-        const hazCoords = [83.9010, 18.3010];
-        setToastNotice('⚠️ Step 11: High Road Hazard: NH-16 Connector Debris detected (+45% delay)');
+        const haz = sc.activeHazard;
+        setToastNotice(`⚠️ Step 11: Active Hazard: ${haz.title} detected (${haz.delay})`);
 
-        if (!liveHazardMarkerRef.current) {
-          const hazEl = document.createElement('div');
-          hazEl.className = 'gmap-incident-pin';
-          hazEl.innerHTML = `
-            <div style="display:flex; align-items:center; gap:5px; background:#fff; border:2px solid #e37400; border-radius:18px; padding:4px 9px; box-shadow:0 0 14px rgba(227,116,0,0.6);">
-              <span style="font-size:14px;">⚠️</span>
-              <span style="font-size:9.5px; font-weight:800; color:#e37400;">ROAD-009 Debris</span>
-            </div>
-          `;
-          liveHazardMarkerRef.current = new MapLibreMarker({ element: hazEl })
-            .setLngLat(hazCoords)
-            .addTo(map);
+        if (liveHazardMarkerRef.current) {
+          liveHazardMarkerRef.current.remove();
         }
+        const hazEl = document.createElement('div');
+        hazEl.className = 'gmap-incident-pin';
+        hazEl.innerHTML = `
+          <div style="display:flex; align-items:center; gap:5px; background:#fff; border:2px solid #e37400; border-radius:18px; padding:4px 9px; box-shadow:0 0 14px rgba(227,116,0,0.6);">
+            <span style="font-size:14px;">⚠️</span>
+            <span style="font-size:9.5px; font-weight:800; color:#e37400;">${haz.title}</span>
+          </div>
+        `;
+        liveHazardMarkerRef.current = new MapLibreMarker({ element: hazEl })
+          .setLngLat(haz.coords)
+          .addTo(map);
         break;
       }
 
       case 12:
         soundManager.playClickTone?.();
         handleSelectRoute('ROUTE_C');
-        setToastNotice('🧭 Step 12: Deterministic Detour computed via Arterial Bypass (+1.2 min)');
+        setToastNotice(`🧭 Step 12: Deterministic detour computed via ${sc.routes.ROUTE_C.corridor}`);
         break;
 
       case 13:
         soundManager.playSonarPing?.();
-        map.flyTo({ center: [83.9150, 18.3150], zoom: 15.2, duration: 800 });
-        setToastNotice('🏥 Step 13: Sonar Pre-Alert transmitted to RIMS Srikakulam Trauma Bay #3');
+        map.flyTo({ center: sc.hospitalCoords, zoom: 15.2, duration: 800 });
+        setToastNotice(`🏥 Step 13: Sonar Pre-Alert transmitted to ${sc.hospital} (${sc.traumaBay})`);
         break;
 
       case 14:
       case 15:
-        setToastNotice('🚑 Step 15: Critical victims secured. Rapid ALS transport in-flight to RIMS');
+        setToastNotice(`🚑 Step 15: Casualties secured. Rapid ALS transport in-flight to ${sc.hospital}`);
         break;
 
       case 16:
         soundManager.playSuccessChime?.();
-        map.flyTo({ center: [83.9150, 18.3150], zoom: 16, pitch: 20, duration: 700 });
-        setToastNotice('🏥 Step 16: Patient handover complete at RIMS Trauma Bay. Vitals synchronized');
+        map.flyTo({ center: sc.hospitalCoords, zoom: 16, pitch: 20, duration: 700 });
+        setToastNotice(`🏥 Step 16: Patient handover complete at ${sc.hospital}. Vitals synchronized`);
         break;
 
       case 17:
       case 18:
         soundManager.playResolvedTone?.();
-        setToastNotice('✅ Step 18: Incident INC-1045 Resolved. After-Action SITREP ready for review');
+        setToastNotice(`✅ Step 18: Incident ${sc.incidentId} Resolved. After-Action SITREP ready for review`);
         break;
 
       default:
@@ -1074,7 +1034,7 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
     setTimeout(() => setToastNotice(''), 3000);
   };
 
-  const handleSolveQuantum = (incidentData) => {
+  const handleSolveQuantum = (_incidentData = null) => {
     soundManager.playSonarPing();
     setToastNotice('⚛️ QAOA Hamiltonian Unitary Converged (Ground State |0001>)');
     setQuantumTelemetry(prev => ({
@@ -1136,36 +1096,46 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
               </div>
 
               {/* 5 Route Metrics from Architecture Diagram */}
-              <div className="quantum-route-metrics-grid">
-                <div className="quantum-metric-item">
-                  <small>1. CONGESTION (C)</small>
-                  <strong style={{ color: r.congestion > 0.5 ? '#d93025' : '#188038' }}>
-                    {(r.congestion * 100).toFixed(0)}%
-                  </strong>
-                </div>
-                <div className="quantum-metric-item">
-                  <small>2. PREDICTED (T)</small>
-                  <strong>{r.predictedTime}</strong>
-                </div>
-                <div className="quantum-metric-item">
-                  <small>3. DELAY (B)</small>
-                  <strong style={{ color: r.bottleneckDelay !== '0.0m' ? '#e37400' : '#188038' }}>
-                    {r.bottleneckDelay}
-                  </strong>
-                </div>
-                <div className="quantum-metric-item">
-                  <small>4. RELIABILITY (R)</small>
-                  <strong style={{ color: r.reliability > 0.85 ? '#188038' : '#e37400' }}>
-                    {(r.reliability * 100).toFixed(0)}%
-                  </strong>
-                </div>
-                <div className="quantum-metric-item">
-                  <small>5. RESPONSE (E)</small>
-                  <strong style={{ color: r.emergencyScore > 0.85 ? '#188038' : '#5f6368' }}>
-                    {r.emergencyScore.toFixed(2)}
-                  </strong>
-                </div>
-              </div>
+              {(() => {
+                const congPct = typeof r.congestion === 'number' ? Math.round(r.congestion * 100) : 18;
+                const relPct = typeof r.reliability === 'number' ? Math.round(r.reliability * 100) : 94;
+                const emScore = typeof r.emergencyScore === 'number' ? r.emergencyScore.toFixed(2) : (r.type === 'QUANTUM' ? '0.96' : '0.62');
+                const pTime = r.predictedTime || r.eta || '8.2 min';
+                const bDelay = r.bottleneckDelay || (r.type === 'DIJKSTRA' ? '+6.4m' : '0.0m');
+
+                return (
+                  <div className="quantum-route-metrics-grid">
+                    <div className="quantum-metric-item">
+                      <small>1. CONGESTION (C)</small>
+                      <strong style={{ color: congPct > 50 ? '#d93025' : '#188038' }}>
+                        {congPct}%
+                      </strong>
+                    </div>
+                    <div className="quantum-metric-item">
+                      <small>2. PREDICTED (T)</small>
+                      <strong>{pTime}</strong>
+                    </div>
+                    <div className="quantum-metric-item">
+                      <small>3. DELAY (B)</small>
+                      <strong style={{ color: bDelay !== '0.0m' ? '#e37400' : '#188038' }}>
+                        {bDelay}
+                      </strong>
+                    </div>
+                    <div className="quantum-metric-item">
+                      <small>4. RELIABILITY (R)</small>
+                      <strong style={{ color: relPct > 85 ? '#188038' : '#e37400' }}>
+                        {relPct}%
+                      </strong>
+                    </div>
+                    <div className="quantum-metric-item">
+                      <small>5. RESPONSE (E)</small>
+                      <strong style={{ color: parseFloat(emScore) > 0.85 ? '#188038' : '#5f6368' }}>
+                        {emScore}
+                      </strong>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           );
         })}
@@ -1339,15 +1309,74 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
       <div className="google-top-actions">
         {/* Live Weather & Coastal Flood Telemetry */}
         <div className="google-weather-pill">
-          <span>🌧️ {WEATHER_DATA.temp} · {WEATHER_DATA.condition} ({WEATHER_DATA.precipitation})</span>
-          <span className="weather-flood-tag">🌊 Flood Alert: {WEATHER_DATA.riverLevel}</span>
-          <span style={{ color: '#5f6368', fontSize: '10px' }}>Grip: {WEATHER_DATA.roadGrip}</span>
+          <span>🌧️ {currentScenario.weather.temp} · {currentScenario.weather.condition}</span>
+          <span className="weather-flood-tag">🌊 Flood: {currentScenario.weather.river}</span>
+          <span style={{ color: '#5f6368', fontSize: '10px' }}>Grip: {currentScenario.weather.grip}</span>
         </div>
 
         <div className="google-status-pill">
           <div className="google-status-dot" />
           <span>EOC LIVE · {clock} IST</span>
         </div>
+
+        {/* Multi-Scenario Selector */}
+        <div className="scenario-dropdown-container">
+          <button
+            className="scenario-pill-btn"
+            onClick={() => setShowScenarioMenu(!showScenarioMenu)}
+            title="Switch Operational Emergency Scenario"
+          >
+            <span>🎯</span>
+            <span>{currentScenario.name}</span>
+            <span style={{ fontSize: '9px', opacity: 0.7 }}>▾</span>
+          </button>
+
+          {showScenarioMenu && (
+            <div className="scenario-dropdown-menu">
+              <div style={{ padding: '6px 10px', fontSize: '10px', fontWeight: 800, color: '#5f6368', letterSpacing: '0.05em' }}>
+                OPERATIONAL SCENARIOS (SRIKAKULAM)
+              </div>
+              {Object.values(OPERATIONAL_SCENARIOS).map((sc) => (
+                <div
+                  key={sc.id}
+                  className={`scenario-item ${sc.id === currentScenarioId ? 'active' : ''}`}
+                  onClick={() => handleSelectScenario(sc.id)}
+                >
+                  <span style={{ fontSize: '16px' }}>
+                    {sc.id === 'SCENARIO_1' ? '💥' : sc.id === 'SCENARIO_2' ? '🌊' : sc.id === 'SCENARIO_3' ? '🫀' : '☣️'}
+                  </span>
+                  <div>
+                    <div className="scenario-item-title">{sc.fullName}</div>
+                    <div className="scenario-item-desc">
+                      {sc.location} · {sc.casualties}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Quantum QAOA vs Dijkstra Explainer Button */}
+        <button
+          className="google-cta-btn"
+          style={{ background: '#070e1b', border: '1px solid #00f0ff', color: '#00f0ff' }}
+          title="Explain Quantum QAOA vs Dijkstra Algorithmic Trade-offs"
+          onClick={() => setShowQuantumModal(!showQuantumModal)}
+        >
+          <Sparkles size={14} />
+          <span>QAOA VS DIJKSTRA</span>
+        </button>
+
+        {/* GIS Tactical Layers Control Button */}
+        <button
+          className="google-icon-btn"
+          style={{ background: '#ffffff', boxShadow: '0 2px 6px rgba(60,64,67,0.2)' }}
+          title="Toggle Tactical GIS Map Overlays"
+          onClick={() => setShowLayersModal(!showLayersModal)}
+        >
+          <Layers size={16} style={{ color: '#1a73e8' }} />
+        </button>
 
         <button
           className="google-icon-btn"
@@ -1475,10 +1504,10 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
                   <div className="place-info-card">
                     <small>ASSIGNED AMBULANCE</small>
                     <strong style={{ color: '#1a73e8' }}>
-                      {selectedEntity.data.assigned_ambulance || 'AMB-001 ALS'}
+                      {selectedEntity.data.assigned_ambulance || currentScenario.assignedAmb}
                     </strong>
-                    <span style={{ fontSize: '10.5px', color: '#188038' }}>
-                      Speed: 58 km/h · ETA: 1.8m
+                    <span style={{ fontSize: '10.5px', color: isTracking ? '#188038' : '#5f6368' }}>
+                      {isTracking ? `Speed: ${trackedVehicle.speed} km/h · ETA: ${trackedVehicle.eta}` : 'Standby at Depot · 0 km/h'}
                     </span>
                   </div>
                   <div className="place-info-card">
@@ -1581,10 +1610,12 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
                 <div className="place-info-grid">
                   <div className="place-info-card">
                     <small>LIVE SPEED (GPS FIX)</small>
-                    <strong style={{ color: '#1a73e8' }}>
-                      {isTracking ? trackedVehicle.speed : (selectedEntity.data.speed_kmh || 58)} km/h
+                    <strong style={{ color: isTracking && selectedEntity.data.id === trackedVehicle.id ? '#1a73e8' : '#5f6368' }}>
+                      {isTracking && selectedEntity.data.id === trackedVehicle.id ? `${trackedVehicle.speed} km/h` : '0 km/h · IDLE'}
                     </strong>
-                    <span style={{ fontSize: '10.5px', color: '#188038' }}>HDOP 0.8m · RTK Locked</span>
+                    <span style={{ fontSize: '10.5px', color: isTracking && selectedEntity.data.id === trackedVehicle.id ? '#188038' : '#5f6368' }}>
+                      {isTracking && selectedEntity.data.id === trackedVehicle.id ? 'Cruising on Speed Corridor' : 'Parked on Standby at Depot'}
+                    </span>
                   </div>
                   <div className="place-info-card">
                     <small>O₂ CYLINDER & LIFE SUPPORT</small>
@@ -1961,43 +1992,48 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
       {showSosModal && (
         <div className="google-modal-overlay" onClick={() => setShowSosModal(false)}>
           <div className="phone-modal-card" onClick={(e) => e.stopPropagation()}>
-            <div style={{ padding: '10px 16px', background: '#0b1528', borderBottom: '1px solid rgba(0, 212, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '11px', color: '#00d4ff', fontWeight: 700 }}>📱 Citizen 108 Mobile App</span>
-              <button
-                style={{ background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '10.5px', fontWeight: 800, cursor: 'pointer' }}
-                onClick={async () => {
-                  soundManager.playSirenTone();
-                  setToastNotice('🚨 Citizen SOS Broadcast Received! Auto-Dispatching Nearest ALS Unit via QAOA...');
-                  try {
-                    await fetch('http://localhost:8000/api/sos_trigger', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        userLat: 18.3050,
-                        userLng: 83.9050,
-                        emergency_type: 'NH-16 Highway Multi-Vehicle Collision',
-                        caller_phone: '+91 98480 22338',
-                        notes: 'High-speed collision with multiple critical casualties'
-                      })
-                    });
-                    setShowSosModal(false);
-                    handleStartTracking('AMB-001', 'NH-16 Collision');
-                  } catch (e) {
-                    setShowSosModal(false);
-                    handleStartTracking('AMB-001', 'NH-16 Collision');
-                  }
-                }}
-              >
-                ⚡ Trigger Test SOS
-              </button>
+            <div style={{ padding: '8px 14px', background: '#0b1528', borderBottom: '1px solid rgba(0, 212, 255, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+              <span style={{ fontSize: '11px', color: '#00d4ff', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📱</span>
+                <span>Citizen 108 Mobile Portal</span>
+              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', borderRadius: '12px', padding: '4px 10px', fontSize: '10.5px', fontWeight: 800, cursor: 'pointer' }}
+                  onClick={async () => {
+                    soundManager.playSirenTone();
+                    setToastNotice('🚨 Citizen SOS Broadcast Received! Auto-Dispatching Nearest ALS Unit via QAOA...');
+                    try {
+                      await fetch('http://localhost:8000/api/sos_trigger', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          userLat: 18.3050,
+                          userLng: 83.9050,
+                          emergency_type: 'NH-16 Highway Multi-Vehicle Collision',
+                          caller_phone: '+91 98480 22338',
+                          notes: 'High-speed collision with multiple critical casualties'
+                        })
+                      });
+                      setShowSosModal(false);
+                      handleStartTracking('AMB-001', 'NH-16 Collision');
+                    } catch (e) {
+                      setShowSosModal(false);
+                      handleStartTracking('AMB-001', 'NH-16 Collision');
+                    }
+                  }}
+                >
+                  ⚡ Trigger Test SOS
+                </button>
+                <button
+                  style={{ background: 'rgba(255, 255, 255, 0.15)', border: 'none', color: '#ffffff', width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  title="Close Phone App"
+                  onClick={() => setShowSosModal(false)}
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
-            <button
-              className="phone-modal-close"
-              title="Close Phone App"
-              onClick={() => setShowSosModal(false)}
-            >
-              <X size={18} />
-            </button>
             <iframe
               src="/phone.html"
               title="108 Citizen SOS Mobile App"
@@ -2015,7 +2051,159 @@ export function GoogleEocShell({ soundEnabled = true, onToggleSound = () => {} }
           handleStopTracking();
         }}
         onStepChange={handleDemoStep}
+        scenario={currentScenario}
       />
+
+      {/* 13. QAOA VS DIJKSTRA DECISION EXPLAINER DRAWER */}
+      {showQuantumModal && (
+        <div className="quantum-explainer-drawer">
+          <div className="explainer-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '18px' }}>⚛️</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#00f0ff' }}>
+                  QUANTUM QAOA VS DIJKSTRA ENGINE
+                </h3>
+                <small style={{ color: '#94a3b8', fontSize: '10px' }}>
+                  Real-World Routing Decision Logic · {currentScenario.fullName}
+                </small>
+              </div>
+            </div>
+            <button
+              style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              onClick={() => setShowQuantumModal(false)}
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="explainer-content">
+            <div className="algo-card dijkstra">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontWeight: 800, fontSize: '12px', color: '#ef4444' }}>
+                  ❌ Dijkstra Shortest Geodesic Path
+                </span>
+                <span style={{ fontSize: '10px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                  GREEDY FAILURE
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: 1.45 }}>
+                {currentScenario.dijkstraExplanation}
+              </p>
+              <div style={{ marginTop: '8px', fontSize: '10px', color: '#ef4444', fontWeight: 700 }}>
+                • Algorithmic flaw: Considers only static physical length, completely blind to real-time bottlenecks and flooded causeways.
+              </div>
+            </div>
+
+            <div className="algo-card quantum">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <span style={{ fontWeight: 800, fontSize: '12px', color: '#00f0ff' }}>
+                  ⚡ Quantum QAOA QUBO Hamiltonian
+                </span>
+                <span style={{ fontSize: '10px', background: 'rgba(0,240,255,0.2)', color: '#00f0ff', padding: '1px 6px', borderRadius: '4px', fontWeight: 800 }}>
+                  GROUND STATE |0001&gt;
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: 1.45 }}>
+                {currentScenario.quantumExplanation}
+              </p>
+              <div style={{ marginTop: '8px', fontSize: '10px', color: '#30d158', fontWeight: 700 }}>
+                • 5-Objective Optimization: Congestion (C) + Bottleneck (B) + Road Grip (G) + Life Threat (L) - ICU Beds (H).
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '10px 12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 800, color: '#f1f5f9', marginBottom: '6px' }}>
+                📊 Algorithmic Performance Metrics:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '10.5px' }}>
+                <div>⏱️ Time Saved: <strong style={{ color: '#10b981' }}>+3.6 Minutes</strong></div>
+                <div>🌊 Hydro Reliability: <strong style={{ color: '#00f0ff' }}>99.2%</strong></div>
+                <div>🚦 Traffic Delay: <strong style={{ color: '#10b981' }}>0.0 min</strong></div>
+                <div>🏥 Triage Accuracy: <strong style={{ color: '#00f0ff' }}>100%</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 14. GIS TACTICAL LAYERS CONTROL DRAWER */}
+      {showLayersModal && (
+        <div className="layers-control-drawer">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f3f4', paddingBottom: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 800, color: '#202124' }}>🗺️ TACTICAL GIS LAYERS</span>
+            <button style={{ background: 'transparent', border: 'none', color: '#5f6368', cursor: 'pointer' }} onClick={() => setShowLayersModal(false)}>
+              <X size={15} />
+            </button>
+          </div>
+
+          <div className="layer-toggle-row">
+            <span>🚦 Traffic Congestion Heatmap</span>
+            <input
+              type="checkbox"
+              checked={showTrafficOverlay}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setShowTrafficOverlay(checked);
+                const map = mapRef.current;
+                if (map && map.getLayer('aert-traffic-layer')) {
+                  map.setLayoutProperty('aert-traffic-layer', 'visibility', checked ? 'visible' : 'none');
+                }
+              }}
+            />
+          </div>
+
+          <div className="layer-toggle-row">
+            <span>🌊 Flood Inundation Zones</span>
+            <input
+              type="checkbox"
+              checked={showFloodOverlay}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setShowFloodOverlay(checked);
+                const map = mapRef.current;
+                if (map && map.getLayer('aert-flood-layer')) {
+                  map.setLayoutProperty('aert-flood-layer', 'visibility', checked ? 'visible' : 'none');
+                }
+              }}
+            />
+          </div>
+
+          <div className="layer-toggle-row">
+            <span>🏥 Hospital ICU Isochrones</span>
+            <input type="checkbox" defaultChecked />
+          </div>
+
+          <div className="layer-toggle-row">
+            <span>⚡ Green Wave Preemption</span>
+            <input type="checkbox" defaultChecked />
+          </div>
+
+          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid #f1f3f4' }}>
+            <div style={{ fontSize: '10.5px', fontWeight: 700, color: '#5f6368', marginBottom: '6px' }}>BASEMAP:</div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button
+                style={{ flex: 1, padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid #dadce0', background: basemap === 'street' ? '#e8f0fe' : '#fff', color: basemap === 'street' ? '#1a73e8' : '#3c4043', fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setBasemap('street')}
+              >
+                Clean
+              </button>
+              <button
+                style={{ flex: 1, padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid #dadce0', background: basemap === 'satellite' ? '#e8f0fe' : '#fff', color: basemap === 'satellite' ? '#1a73e8' : '#3c4043', fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setBasemap('satellite')}
+              >
+                Satellite
+              </button>
+              <button
+                style={{ flex: 1, padding: '4px', fontSize: '10px', borderRadius: '4px', border: '1px solid #dadce0', background: basemap === 'dark' ? '#e8f0fe' : '#fff', color: basemap === 'dark' ? '#1a73e8' : '#3c4043', fontWeight: 700, cursor: 'pointer' }}
+                onClick={() => setBasemap('dark')}
+              >
+                Dark EOC
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 11. TRAFFIC FLOW & HAZARDS LEGEND */}
       <div className="traffic-legend-bar">

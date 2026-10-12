@@ -708,8 +708,15 @@ def create_incident(data: dict) -> Dict[str, Any]:
     now_iso = datetime.now().isoformat()
 
     if not incident_id:
-        count = connection.execute("SELECT COUNT(*) as c FROM incidents").fetchone()["c"]
-        incident_id = f"INC-{count + 1:03d}"
+        cur = connection.cursor()
+        c = 1
+        while True:
+            candidate_id = f"INC-{c:03d}"
+            exists = cur.execute("SELECT 1 FROM incidents WHERE id = ?", (candidate_id,)).fetchone()
+            if not exists:
+                incident_id = candidate_id
+                break
+            c += 1
 
     connection.execute("""
         INSERT INTO incidents (

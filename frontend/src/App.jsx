@@ -23,15 +23,16 @@ export default function App() {
     typeof window !== 'undefined' &&
     (window.location.search.includes('legacy') || window.location.hash === '#legacy');
 
-  if (isMapLab) {
-    return <MapLabWorkspace />;
-  }
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Sync sound manager enabled state
   useEffect(() => {
     soundManager.setEnabled(soundEnabled);
   }, [soundEnabled]);
+
+  if (isMapLab) {
+    return <MapLabWorkspace />;
+  }
 
   if (isLegacy) {
     return (

@@ -55,7 +55,8 @@ export const GOLDEN_STEPS = [
 export function GoldenSliceMission({
   isOpen = false,
   onClose = () => {},
-  onStepChange = () => {}
+  onStepChange = () => {},
+  scenario = null
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isPlayingAuto, setIsPlayingAuto] = useState(false);
@@ -174,6 +175,32 @@ export function GoldenSliceMission({
     }
   };
 
+  const getStepDesc = (stepObj) => {
+    if (!scenario) return stepObj.desc;
+    switch (stepObj.id) {
+      case 1:
+        return `Emergency distress intake: ${scenario.title} at ${scenario.location}.`;
+      case 3:
+        return `AI Triage: ${scenario.casualties}. Hazard: ${scenario.hazard}.`;
+      case 4:
+        return `Landmark resolved: ${scenario.location} [${scenario.center[0]}°E, ${scenario.center[1]}°N].`;
+      case 7:
+        return `AI recommends unit ${scenario.assignedAmb} (${scenario.ambType}) and ${scenario.hospital}.`;
+      case 10:
+        return `Unit ${scenario.assignedAmb} navigating active corridor under ALS protocol.`;
+      case 11:
+        return `Active road hazard: ${scenario.activeHazard?.title || 'Road Obstruction'} reported on corridor.`;
+      case 12:
+        return `Deterministic detour computed around ${scenario.activeHazard?.title || 'Obstacle'} via safe arterial.`;
+      case 13:
+        return `Sonar pre-alert transmitted to ${scenario.hospital} ${scenario.traumaBay}.`;
+      case 16:
+        return `Patients transferred to ${scenario.hospital} ${scenario.traumaBay}. Telemetry synchronized.`;
+      default:
+        return stepObj.desc;
+    }
+  };
+
   return (
     <div
       style={{
@@ -200,7 +227,7 @@ export function GoldenSliceMission({
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ff9500', boxShadow: '0 0 8px #ff9500' }} />
           <span style={{ fontSize: '9.5px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#ff9500', letterSpacing: '0.05em' }}>
-            [SIMULATED SCENARIO: NH-16 MULTI-VEHICLE COLLISION MISSION]
+            [SIMULATED SCENARIO: {scenario?.fullName?.toUpperCase() || 'NH-16 MULTI-VEHICLE COLLISION MISSION'}]
           </span>
         </div>
 
@@ -225,7 +252,7 @@ export function GoldenSliceMission({
               {step.title}
             </div>
             <div style={{ fontSize: '10.5px', fontFamily: 'Inter, sans-serif', color: '#9aa8b8', marginTop: '2px' }}>
-              {step.desc}
+              {getStepDesc(step)}
             </div>
           </div>
         </div>
