@@ -1,3 +1,9 @@
+# GitHub Actions Workflow Template for AERT 3.0 Production Deployment
+# To enable this in your GitHub repository:
+# 1. Ensure your Personal Access Token (PAT) has the 'workflow' scope enabled in GitHub Developer Settings.
+# 2. Copy this file to .github/workflows/deploy.yml
+# 3. In GitHub repo Settings -> Pages, select 'GitHub Actions' as the source.
+
 name: Deploy AERT 3.0 Production Platform
 
 on:

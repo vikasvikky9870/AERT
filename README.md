@@ -1,9 +1,8 @@
 # AERT 3.0 — AI Emergency Response & Spatial Digital Twin Operating System
 
-[![Deploy AERT 3.0 Production Platform](https://github.com/vikasvikky9870/AERT/actions/workflows/deploy.yml/badge.svg)](https://github.com/vikasvikky9870/AERT/actions/workflows/deploy.yml)
 [![Live Production URL](https://img.shields.io/badge/Live%20Platform-GitHub%20Pages-00f0ff.svg)](https://vikasvikky9870.github.io/AERT/)
 [![Sector](https://img.shields.io/badge/Sector-AP--SKLM--EOC--01-10b981.svg)](https://vikasvikky9870.github.io/AERT/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/vikasvikky9870/AERT)
 
 > **Primary Operational District**: Srikakulam District, Andhra Pradesh, India (`AP-SKLM-EOC-01`)  
 > **Command Center Coordinates**: `[83.8961°E, 18.2969°N]` (7 Road Junction EOC)  
