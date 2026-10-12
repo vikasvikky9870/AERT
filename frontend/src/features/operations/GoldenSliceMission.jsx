@@ -60,6 +60,7 @@ export function GoldenSliceMission({
 }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [isPlayingAuto, setIsPlayingAuto] = useState(false);
+  const [autoSpeedMs, setAutoSpeedMs] = useState(4500); // Default comfortable 4.5s per step (not rushed)
 
   // Auto-start playback whenever modal opens
   useEffect(() => {
@@ -88,15 +89,15 @@ export function GoldenSliceMission({
     } else if (currentStep === 4) {
       operationalStore.setSelectedEntity({
         type: 'incident',
-        coordinates: [83.9050, 18.3050],
+        coordinates: scenario?.center || [83.9050, 18.3050],
         data: {
-          id: 'INC-1045',
-          type: 'Major Highway Collision',
-          severity: 'CRITICAL',
-          location: 'NH-16 Bypass Junction',
+          id: scenario?.incidentId || 'INC-1045',
+          type: scenario?.type || 'Major Collision',
+          severity: scenario?.severity || 'CRITICAL',
+          location: scenario?.location || 'Srikakulam',
           lifecycle_status: 'REPORTED',
-          victims: 6,
-          critical_victims: 2
+          victims: 4,
+          critical_victims: 1
         }
       });
       soundManager.playCriticalAlert();
@@ -105,56 +106,53 @@ export function GoldenSliceMission({
       setIsPlayingAuto(false); // Pause for human approval gate
     } else if (currentStep === 9) {
       soundManager.playDispatchChime();
-      operationalStore.setActiveRoute({
-        coordinates: [
-          [83.8920, 18.2980],
-          [83.8961, 18.2969],
-          [83.9010, 18.3010],
-          [83.9050, 18.3050]
-        ]
-      });
-      operationalStore.transitionIncidentLifecycle('INC-1045', 'DISPATCHED', 'AMB-003', 'HOS-001');
+      if (scenario?.routes?.ROUTE_A?.waypoints) {
+        operationalStore.setActiveRoute({
+          coordinates: scenario.routes.ROUTE_A.waypoints
+        });
+      }
+      operationalStore.transitionIncidentLifecycle(scenario?.incidentId || 'INC-1045', 'DISPATCHED', scenario?.assignedAmb || 'AMB-003', scenario?.hospitalId || 'HOS-001');
     } else if (currentStep === 11) {
       soundManager.playWarningBeep();
       operationalStore.createRoadEvent({
-        id: 'ROAD-009',
+        id: scenario?.activeHazard?.id || 'ROAD-009',
         type: 'ROAD_BLOCK',
-        location: 'NH-16 Connector Debris',
-        coordinates: [83.9010, 18.3010],
+        location: scenario?.activeHazard?.title || 'Active Corridor Obstruction',
+        coordinates: scenario?.activeHazard?.coords || [83.9010, 18.3010],
         severity: 'HIGH',
         is_active: true
       });
     } else if (currentStep === 13) {
       soundManager.playHospitalSonar();
       operationalStore.sendHospitalPreAlert({
-        hospital_id: 'HOS-001',
-        incident_id: 'INC-1045',
-        estimated_eta_mins: 4.2
+        hospital_id: scenario?.hospitalId || 'HOS-001',
+        incident_id: scenario?.incidentId || 'INC-1045',
+        estimated_eta_mins: 3.8
       });
     } else if (currentStep === 16) {
       soundManager.playSuccessChime();
     } else if (currentStep === 17) {
       soundManager.playResolvedTone();
-      operationalStore.transitionIncidentLifecycle('INC-1045', 'RESOLVED', 'AMB-003', 'HOS-001');
+      operationalStore.transitionIncidentLifecycle(scenario?.incidentId || 'INC-1045', 'RESOLVED', scenario?.assignedAmb || 'AMB-003', scenario?.hospitalId || 'HOS-001');
     }
-  }, [currentStep, isOpen]);
+  }, [currentStep, isOpen, scenario]);
 
-  // Auto-play timer
+  // Auto-play timer with configurable speed (Slow 6.5s / Normal 4.5s / Fast 2.2s)
   useEffect(() => {
     let timer;
     if (isPlayingAuto && isOpen) {
       if (currentStep === 8) {
-        setIsPlayingAuto(false);
+        setIsPlayingAuto(false); // Mandatory Human Gate pause
       } else if (currentStep < 18) {
         timer = setTimeout(() => {
           setCurrentStep((prev) => prev + 1);
-        }, 2200);
+        }, autoSpeedMs);
       } else {
         setIsPlayingAuto(false);
       }
     }
     return () => clearTimeout(timer);
-  }, [isPlayingAuto, currentStep, isOpen]);
+  }, [isPlayingAuto, currentStep, isOpen, autoSpeedMs]);
 
   if (!isOpen) return null;
 
@@ -177,6 +175,48 @@ export function GoldenSliceMission({
 
   const getStepDesc = (stepObj) => {
     if (!scenario) return stepObj.desc;
+    if (scenario.id === 'SCENARIO_5') {
+      switch (stepObj.id) {
+        case 1:
+          return `Emergency distress: Elderly patient collapsed with acute airway arrest inside 3-meter wide residential alley in Chinnabazar Old Town.`;
+        case 2:
+          return `Voice transcript: Caller reports heavy ambulance cannot turn into Brahmin Street Lane 4 due to market pushcarts.`;
+        case 3:
+          return `AI Triage: Severe Anaphylaxis & Airway Obstruction. Detected constraint: 3m lane width precludes standard 5-ton ALS Tempo-Traveller vehicle.`;
+        case 4:
+          return `Landmark resolved: Chinnabazar Lane 4 [83.8938°E, 18.2938°N], 140m deep into pedestrian residential core.`;
+        case 5:
+          return `Incident INC-1088 logged with CRITICAL NARROW-STREET priority tag.`;
+        case 6:
+          return `Multi-Agent assessment: Computes 2-tier multimodal deployment: Paramedic First-Responder Bike + Staged ALS Unit.`;
+        case 7:
+          return `AI recommendation: Deploy BIKE-001 (rapid alley response with portable O2/AED) and stage AMB-004 at Old Bus Stand mouth.`;
+        case 8:
+          return `Human dispatcher approves Multimodal Narrow Street Emergency Plan.`;
+        case 9:
+          return `BIKE-001 deployed into alleyway; AMB-004 speeds to arterial rendezvous point.`;
+        case 10:
+          return `BIKE-001 navigates pedestrian street grid at 32 km/h; AMB-004 arrives at street mouth.`;
+        case 11:
+          return `Active Obstruction: Vendor stalls block 4-wheel entry. BIKE-001 weaves through 1.2m pedestrian pathway.`;
+        case 12:
+          return `Detour engine confirms clear footpath trajectory for compact 2-wheeler unit.`;
+        case 13:
+          return `Hospital pre-alert transmitted to GGH Srikakulam Emergency Resuscitation Unit.`;
+        case 14:
+          return `Paramedic Bike arrives at doorstep in 2.5 mins. Portable airway bag-valve mask ventilation initiated.`;
+        case 15:
+          return `Patient stabilized on narrow roll-in stretcher; transferred 120m out of alley to staged ALS Unit.`;
+        case 16:
+          return `Patient admitted to GGH Srikakulam Resuscitation Unit. Oxygen saturation restored to 98%.`;
+        case 17:
+          return `Incident INC-1088 marked RESOLVED. BIKE-001 and AMB-004 return to standby.`;
+        case 18:
+          return `SITREP logged: Multimodal narrow-street protocol saved 15.4 mins compared to stalled heavy vehicle entry.`;
+        default:
+          return stepObj.desc;
+      }
+    }
     switch (stepObj.id) {
       case 1:
         return `Emergency distress intake: ${scenario.title} at ${scenario.location}.`;
@@ -208,8 +248,8 @@ export function GoldenSliceMission({
         bottom: '68px',
         left: '50%',
         transform: 'translateX(-50%)',
-        width: 'min(860px, calc(100vw - 32px))',
-        background: 'rgba(7, 13, 22, 0.94)',
+        width: 'min(940px, calc(100vw - 32px))',
+        background: 'rgba(7, 13, 22, 0.96)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
         border: '1px solid rgba(0, 240, 255, 0.35)',
@@ -222,36 +262,104 @@ export function GoldenSliceMission({
         gap: '10px'
       }}
     >
-      {/* Top Banner */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Top Banner with Speed Selector & Close */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ff9500', boxShadow: '0 0 8px #ff9500' }} />
           <span style={{ fontSize: '9.5px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 800, color: '#ff9500', letterSpacing: '0.05em' }}>
-            [SIMULATED SCENARIO: {scenario?.fullName?.toUpperCase() || 'NH-16 MULTI-VEHICLE COLLISION MISSION'}]
+            [SCENARIO: {scenario?.fullName?.toUpperCase() || 'NH-16 MULTI-VEHICLE COLLISION MISSION'}]
           </span>
+        </div>
+
+        {/* Speed Selector Pills */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.05)', padding: '2px 4px', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <span style={{ fontSize: '9px', fontFamily: 'JetBrains Mono, monospace', color: '#9aa8b8', padding: '0 4px', fontWeight: 700 }}>SPEED:</span>
+          {[
+            { label: '🐢 Slow 6.5s', ms: 6500 },
+            { label: '⏱️ Normal 4.5s', ms: 4500 },
+            { label: '⚡ Fast 2.2s', ms: 2200 }
+          ].map(spd => (
+            <button
+              key={spd.ms}
+              onClick={() => {
+                setAutoSpeedMs(spd.ms);
+                soundManager.playClick?.();
+              }}
+              style={{
+                background: autoSpeedMs === spd.ms ? 'rgba(0, 240, 255, 0.25)' : 'transparent',
+                border: autoSpeedMs === spd.ms ? '1px solid #00f0ff' : 'none',
+                color: autoSpeedMs === spd.ms ? '#00f0ff' : '#7a8898',
+                fontSize: '9px',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontWeight: 800,
+                borderRadius: '4px',
+                padding: '2px 6px',
+                cursor: 'pointer'
+              }}
+            >
+              {spd.label}
+            </button>
+          ))}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '10px', fontFamily: 'JetBrains Mono, monospace', color: '#00f0ff', fontWeight: 800 }}>
             STEP {currentStep} OF 18
           </span>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#5a6878', cursor: 'pointer', padding: '2px' }}>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#5a6878', cursor: 'pointer', padding: '2px' }} title="Close Mission HUD">
             <X size={15} />
           </button>
         </div>
       </div>
 
+      {/* Interactive Step Jump Pills (1 through 18) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', overflowX: 'auto', paddingBottom: '2px' }}>
+        {GOLDEN_STEPS.map((s) => {
+          const isPassed = s.id < currentStep;
+          const isCurrent = s.id === currentStep;
+          return (
+            <button
+              key={s.id}
+              onClick={() => {
+                setCurrentStep(s.id);
+                soundManager.playClick?.();
+              }}
+              title={s.title}
+              style={{
+                flex: 1,
+                minWidth: '24px',
+                height: '18px',
+                borderRadius: '3px',
+                border: isCurrent ? '1px solid #00f0ff' : isPassed ? '1px solid rgba(48, 209, 88, 0.4)' : '1px solid rgba(255, 255, 255, 0.08)',
+                background: isCurrent ? 'rgba(0, 240, 255, 0.3)' : isPassed ? 'rgba(48, 209, 88, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+                color: isCurrent ? '#00f0ff' : isPassed ? '#30d158' : '#5a6878',
+                fontSize: '9px',
+                fontFamily: 'JetBrains Mono, monospace',
+                fontWeight: 800,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0
+              }}
+            >
+              {s.id}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main Step Detail */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
           <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(0, 240, 255, 0.15)', border: '1px solid #00f0ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <StepIcon size={20} color="#00f0ff" />
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '13px', fontFamily: 'Space Grotesk, sans-serif', fontWeight: 800, color: '#f2f5f8' }}>
               {step.title}
             </div>
-            <div style={{ fontSize: '10.5px', fontFamily: 'Inter, sans-serif', color: '#9aa8b8', marginTop: '2px' }}>
+            <div style={{ fontSize: '10.5px', fontFamily: 'Inter, sans-serif', color: '#9aa8b8', marginTop: '2px', lineHeight: 1.35 }}>
               {getStepDesc(step)}
             </div>
           </div>
@@ -262,6 +370,7 @@ export function GoldenSliceMission({
           <button
             onClick={handlePrev}
             disabled={currentStep === 1}
+            title="Previous Step"
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -276,6 +385,7 @@ export function GoldenSliceMission({
 
           <button
             onClick={() => setIsPlayingAuto(!isPlayingAuto)}
+            title={isPlayingAuto ? "Pause Autoplay" : "Start Autoplay"}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -292,12 +402,13 @@ export function GoldenSliceMission({
             }}
           >
             {isPlayingAuto ? <Pause size={13} /> : <Play size={13} />}
-            <span>{isPlayingAuto ? 'PAUSE' : 'AUTO-PLAY'}</span>
+            <span>{isPlayingAuto ? 'PAUSE' : 'PLAY'}</span>
           </button>
 
           <button
             onClick={handleNext}
             disabled={currentStep === 18}
+            title="Next Step"
             style={{
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.12)',
@@ -345,7 +456,7 @@ export function GoldenSliceMission({
             height: '100%',
             width: `${(currentStep / 18) * 100}%`,
             background: 'linear-gradient(90deg, #00f0ff, #30d158)',
-            transition: 'width 0.3s ease'
+            transition: 'width 0.4s ease'
           }}
         />
       </div>
